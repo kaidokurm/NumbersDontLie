@@ -1,0 +1,24 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: ndl_postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-ndl}
+      POSTGRES_USER: ${POSTGRES_USER:-ndl}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ndl_password}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - ndl_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-ndl} -d ${POSTGRES_DB:-ndl}",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  ndl_postgres_data:

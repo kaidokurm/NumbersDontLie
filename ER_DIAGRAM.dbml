@@ -1,0 +1,251 @@
+Project numbers_dont_lie {
+  database_type: "PostgreSQL"
+  Note: "Current schema. Includes legacy goal_milestones table from migrations."
+}
+
+Table users {
+  id uuid [pk]
+  auth0_sub text [unique, note: "nullable"]
+  email text [unique, note: "nullable"]
+  password_hash text [note: "nullable"]
+  email_verified boolean [not null, default: false]
+  created_at timestamptz [not null]
+  updated_at timestamptz
+  deleted_at timestamptz
+
+  Indexes {
+    email
+    auth0_sub
+    deleted_at
+  }
+}
+
+Table user_identities {
+  id uuid [pk]
+  user_id uuid [not null]
+  provider text [not null]
+  provider_sub text [not null]
+  email_at_link_time text
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+
+  Indexes {
+    user_id
+    (provider, provider_sub) [unique]
+  }
+}
+
+Table refresh_tokens {
+  id uuid [pk]
+  user_id uuid [not null]
+  token varchar(255) [not null, unique]
+  created_at timestamptz [not null]
+  expires_at timestamptz [not null]
+  revoked_at timestamptz
+
+  Indexes {
+    user_id
+    token
+  }
+}
+
+Table email_verification_codes {
+  id uuid [pk]
+  user_id uuid [not null]
+  code text [not null]
+  created_at timestamptz
+  expires_at timestamptz [not null]
+  verified_at timestamptz
+  last_resent_at timestamptz
+
+  Indexes {
+    user_id
+    expires_at
+  }
+}
+
+Table password_reset_tokens {
+  id uuid [pk]
+  user_id uuid [not null]
+  token text [not null, unique]
+  created_at timestamptz
+  expires_at timestamptz [not null]
+  used_at timestamptz
+
+  Indexes {
+    user_id
+    token
+  }
+}
+
+Table two_factor_secrets {
+  user_id uuid [pk]
+  secret_encrypted text [not null]
+  enabled boolean [not null, default: false]
+  verified_at timestamptz
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+
+  Indexes {
+    enabled
+  }
+}
+
+Table privacy_preferences {
+  user_id uuid [pk]
+  data_usage_consent boolean [not null, default: false]
+  consent_given_at timestamptz
+  allow_anonymized_analytics boolean [not null, default: false]
+  public_profile_visible boolean [not null, default: false]
+  email_notifications_enabled boolean [not null, default: true]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+Table health_profiles {
+  user_id uuid [pk]
+  birth_year int
+  gender text
+  height_cm int [not null]
+  baseline_activity_level text [not null]
+  dietary_preferences text [note: "encrypted json-array text"]
+  dietary_restrictions text [note: "encrypted json-array text"]
+  fitness_assessment text [note: "encrypted json text"]
+  fitness_assessment_completed boolean [default: false]
+  bmi_value decimal(5,2)
+  bmi_classification varchar(20)
+  wellness_score int [default: 0]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+  deleted_at timestamptz
+
+  Indexes {
+    bmi_classification
+    wellness_score
+    deleted_at
+  }
+}
+
+Table weight_entries {
+  id uuid [pk]
+  user_id uuid [not null]
+  measured_at timestamptz [not null]
+  weight_kg numeric(5,2) [not null]
+  note text [note: "encrypted"]
+  deleted_at timestamptz
+
+  Indexes {
+    (user_id, measured_at) [name: "idx_weight_entries_user_time"]
+    (user_id, measured_at) [unique, name: "uq_weight_entries_user_measured_at_active", note: "partial unique where deleted_at is null"]
+    deleted_at
+  }
+}
+
+Table activity_checkins {
+  id uuid [pk]
+  user_id uuid [not null]
+  activity_type varchar(64) [not null]
+  duration_minutes int
+  intensity varchar(24)
+  note text [note: "encrypted"]
+  checkin_at timestamptz [not null]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+  deleted_at timestamptz
+
+  Indexes {
+    (user_id, checkin_at) [name: "idx_activity_checkins_user_checkin_at"]
+    (user_id, checkin_at) [unique, name: "uq_activity_checkins_user_checkin_at_active", note: "partial unique where deleted_at is null"]
+  }
+}
+
+Table goals {
+  id uuid [pk]
+  user_id uuid [not null]
+  goal_type text [not null]
+  target_weight_kg numeric(5,2)
+  target_activity_days_per_week int
+  target_date date
+  notes text
+  is_active boolean [not null, default: true]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+  deleted_at timestamptz
+
+  Indexes {
+    user_id
+    (user_id, is_active)
+    (user_id, target_date)
+    deleted_at
+  }
+}
+
+Table goal_progress {
+  id uuid [pk]
+  goal_id uuid [not null]
+  user_id uuid [not null]
+  current_value decimal(10,2)
+  progress_percentage int [default: 0]
+  is_on_track boolean [default: true]
+  days_remaining int
+  milestones_completed int [default: 0]
+  milestone_details jsonb
+  recorded_at timestamptz [not null]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+  deleted_at timestamptz
+
+  Indexes {
+    goal_id
+    user_id
+    recorded_at
+    is_on_track
+    deleted_at
+  }
+}
+
+Table goal_milestones {
+  id uuid [pk]
+  goal_id uuid [not null]
+  milestone_type text [not null]
+  milestone_value numeric(10,4) [not null]
+  reached_at timestamptz
+  created_at timestamptz [not null]
+
+  Indexes {
+    goal_id
+  }
+}
+
+Table ai_insights {
+  id uuid [pk]
+  user_id uuid [not null]
+  goal_id uuid [note: "nullable"]
+  input_hash text [not null]
+  model text [not null]
+  payload jsonb [not null]
+  created_at timestamptz [not null]
+  deleted_at timestamptz
+
+  Indexes {
+    (user_id, created_at)
+    (user_id, input_hash)
+    deleted_at
+  }
+}
+
+Ref: user_identities.user_id > users.id [delete: cascade]
+Ref: refresh_tokens.user_id > users.id [delete: cascade]
+Ref: email_verification_codes.user_id > users.id [delete: cascade]
+Ref: password_reset_tokens.user_id > users.id [delete: cascade]
+Ref: two_factor_secrets.user_id > users.id [delete: cascade]
+Ref: privacy_preferences.user_id > users.id [delete: cascade]
+Ref: health_profiles.user_id > users.id [delete: cascade]
+Ref: weight_entries.user_id > users.id [delete: cascade]
+Ref: activity_checkins.user_id > users.id [delete: cascade]
+Ref: goals.user_id > users.id [delete: cascade]
+Ref: goal_progress.goal_id > goals.id [delete: cascade]
+Ref: goal_progress.user_id > users.id [delete: cascade]
+Ref: goal_milestones.goal_id > goals.id [delete: cascade]
+Ref: ai_insights.user_id > users.id [delete: cascade]
+Ref: ai_insights.goal_id > goals.id [delete: set null]

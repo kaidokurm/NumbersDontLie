@@ -1,0 +1,10 @@
+spring:
+  application:
+    name: Wellness App - Numbers Don't Lie
+    description: A wellness application to track and improve your health metrics.
+  profiles:
+    active: local
+
+# Demo mode configuration
+demo:
+  mode: ${DEMO_MODE:false}

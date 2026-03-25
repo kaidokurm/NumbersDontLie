@@ -1,0 +1,9 @@
+{
+  "data": {
+    "access_token": "eyJhbGciOiJSUzI1NiJ9.eyJpc3MiOiJudW1iZXJzLWRvbnQtbGllIiwic3ViIjoiMDAwMDAwMDAtMDAwMC0wMDAwLTAwMDAtMDAwMDAwMDAwMDAxIiwiZXhwIjoxNzczMzIyNjUyLCJpYXQiOjE3NzMzMjI1OTIsImVtYWlsIjoiZGVtb0BleGFtcGxlLmNvbSJ9.SshNl3fPpmu7JTNx1z_FCKlOnOtlqRittFL31hmUy-tuuIlIi5bFLWXFas52NPrbcwILqHdaBFm8YOoVslIpqk0Wyj1851l0-bxcKOFmpzBZwhhIQpuwhiB_BGnIsqGj8S3NFK45tHq-rmlnng5l8rIDLB0dRQbHoi03rje7tyvC5XoMtCVUkYzuawbzF883xN9zvJInQCn_iiI2CVJ6-y5rG4cgjAxZC1iy3Jl-ck9KhyezzXtl0bA9A2wDzhUANyWOBwey1eKEf_twkYAUhNT1QhBJfsFlnDM8hZ7FpdTwSEb9XBjaSGbCcXp8ikzmDn1CWhtAV1k6ZjsQRNUCZg",
+    "refresh_token": "d62817d0-6ba6-4c48-8bcb-0501e1fdee2a",
+    "token_type": "Bearer",
+    "expires_in": 900
+  },
+  "timestamp": "2026-03-12T15:36:33.080584756+02:00"
+}

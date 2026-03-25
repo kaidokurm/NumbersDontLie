@@ -1,0 +1,101 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: ndl_postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-ndl}
+      POSTGRES_USER: ${POSTGRES_USER:-ndl}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ndl_password}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - ndl_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-ndl} -d ${POSTGRES_DB:-ndl} -h 127.0.0.1",
+        ]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+      start_period: 10s
+    networks:
+      - ndl_network
+
+  mailhog:
+    image: mailhog/mailhog:v1.0.1
+    container_name: ndl_mailhog
+    ports:
+      - "${MAILHOG_UI_PORT:-8025}:8025"
+    networks:
+      - ndl_network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ndl_backend
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-local}
+      DATABASE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-ndl}
+      DATABASE_USER: ${POSTGRES_USER:-ndl}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-ndl_password}
+      DEMO_MODE: ${DEMO_MODE:-false}
+
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+      OPENAI_ORGANIZATION: ${OPENAI_ORGANIZATION:-}
+      OPENAI_PROJECT: ${OPENAI_PROJECT:-}
+
+      APP_TOKEN_PEPPER: ${APP_TOKEN_PEPPER:-}
+      APP_DATA_ENCRYPTION_KEY: ${APP_DATA_ENCRYPTION_KEY:-change-me-in-env}
+      APP_EMAIL_ENABLED: ${APP_EMAIL_ENABLED:-false}
+      APP_EMAIL_FROM_ADDRESS: ${APP_EMAIL_FROM_ADDRESS:-noreply@numbersdontlie.app}
+      APP_EMAIL_FROM_NAME: ${APP_EMAIL_FROM_NAME:-Numbers Don't Lie}
+      APP_EMAIL_FRONTEND_URL: ${APP_EMAIL_FRONTEND_URL:-http://localhost:5173}
+      MAIL_HOST: ${MAIL_HOST:-mailhog}
+      MAIL_PORT: ${MAIL_PORT:-1025}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_SMTP_AUTH: ${MAIL_SMTP_AUTH:-false}
+      MAIL_SMTP_STARTTLS: ${MAIL_SMTP_STARTTLS:-false}
+    ports:
+      - "${SERVER_PORT:-8080}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - ndl_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_AUTH0_AUDIENCE: ${VITE_AUTH0_AUDIENCE:-https://numbers-dont-lie-api}
+        VITE_DEMO_MODE: ${VITE_DEMO_MODE:-false}
+    container_name: ndl_frontend
+    environment:
+      # Note: Environment vars here are for runtime, not build time
+      # Build-time vars are passed as args above
+      VITE_AUTH0_AUDIENCE: ${VITE_AUTH0_AUDIENCE:-https://numbers-dont-lie-api}
+      VITE_DEMO_MODE: ${VITE_DEMO_MODE:-false}
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+    networks:
+      - ndl_network
+
+volumes:
+  ndl_postgres_data:
+
+networks:
+  ndl_network:
+    driver: bridge
